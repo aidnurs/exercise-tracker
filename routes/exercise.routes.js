@@ -5,7 +5,7 @@ const Exercise = require('../models/exercise.model');
 
 router.get('/users', (req, res) => {
     User.find({})
-        .select({ log: 0 })
+        .select({ log: 0, __v: 0 })
         .exec((err, data) => {
             if (err) {
                 res.status(400).send(err);
@@ -31,40 +31,35 @@ router.post('/add', (req, res) => {
         if (err) {
             res.status(400).send(err);
         }
+        let date = new Date();
+        if (req.body.date !== '') {
+            const unformattedDate = req.body.date.split('-');
+            if (unformattedDate.length !== 3) {
+                res.status(400).send('Invalid Date');
+            }
+            date = new Date(unformattedDate[0], unformattedDate[1] - 1, unformattedDate[2]);
+        }
         const exercise = new Exercise({
             username: user.username,
-            _id: user._id,
+            user_id: user._id,
             description: req.body.description,
             duration: req.body.duration,
-            date: req.body.date,
+            date: date,
         });
-        exercise.save((err, data) => {
-            if (err) {
-            }
-        });
-        console.log(exercise);
+        exercise.save();
         user.log.push(exercise);
         user.save();
         res.json(exercise);
     });
-    // User.find({ username: req.body.username }, (err, user) => {
-    //     user.log.push();
-    // });
-    // exercise.save((err, data) => {
-    //     if (err) {
-    //         res.status(400).send(err);
-    //     }
-    //     console.log(data);
-    //     console.log(req.body);
-    //     data.username = req.body.username;
-    //     res.json(data);
-    // });
 });
 
 router.get('/log', (req, res) => {
-    User.find({ username: 'nursultan' }, (err, data) => {
-        res.json(data);
-    });
+    User.findOne({ username: 'nursultan' })
+        .populate('log')
+        .select({ __v: 0 })
+        .exec((err, data) => {
+            res.json(data);
+        });
 });
 
 module.exports = router;
